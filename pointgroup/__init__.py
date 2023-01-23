@@ -1,3 +1,5 @@
+__version__ = '0.1'
+
 import itertools
 import numpy as np
 from pointgroup.operations import inversion, rotation_matrix, reflection

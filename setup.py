@@ -1,5 +1,5 @@
 from setuptools import setup, Extension
-import numpy
+
 
 def get_version_number():
     main_ns = {}
