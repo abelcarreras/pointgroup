@@ -1,3 +1,5 @@
+[![Test & upload to PyPI](https://github.com/abelcarreras/pointgroup/actions/workflows/python-publish.yml/badge.svg)](https://github.com/abelcarreras/pointgroup/actions/workflows/python-publish.yml)
+[![PyPI version](https://badge.fury.io/py/pointgroup.svg)](https://badge.fury.io/py/pointgroup)
 
 PointGroup
 ==========
