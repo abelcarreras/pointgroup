@@ -5,6 +5,7 @@ Small utility to determine the point symmetry group of molecular geometries
 
 Features
 --------
+- Get point symmetry group label
 - Pure python implementation
 
 Requisites
@@ -30,7 +31,7 @@ pg = PointGroup(positions=[[ 0.000000,  0.000000,  0.000000],
 print('Point group: ', pg.get_point_group())
 ```
 
-acknowledgments
+Acknowledgments
 ---------------
 This utility adapts a code originally written by Efrem Bernuz
 
