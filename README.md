@@ -30,8 +30,8 @@ pg = PointGroup(positions=[[ 0.000000,  0.000000,  0.000000],
 print('Point group: ', pg.get_point_group())
 ```
 
-Acknowledges
-------------
+acknowledgments
+---------------
 This utility adapts a code originally written by Efrem Bernuz
 
 Contact info
