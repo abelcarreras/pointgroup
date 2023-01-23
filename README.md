@@ -1,7 +1,6 @@
 
 PointGroup
 ==========
-
 Small utility to determine the point symmetry group of molecular geometries
 
 Features
@@ -15,8 +14,6 @@ Requisites
 
 Simple example
 --------------
-Posym allows to create basic continuous symmetry python objects that can be operated using 
-direct sum (+) and direct product (*).
 ```python
 from pointgroup import PointGroup
 
