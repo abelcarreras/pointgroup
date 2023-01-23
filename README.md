@@ -1,8 +1,8 @@
 
-PointSymmetry
-=============
+PointGroup
+==========
 
-Small utility to determine the point symmetry of molecular geometries
+Small utility to determine the point symmetry group of molecular geometries
 
 Features
 --------
