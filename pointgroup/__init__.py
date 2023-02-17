@@ -43,8 +43,8 @@ class PointGroup:
             # Symmetric group
             self._symmetric()
 
-        print(len(self._rot_sym))
-        print(len(self._sym_op))
+        # print(len(self._rot_sym))
+        # print(len(self._sym_op))
 
     def get_point_group(self):
         return self.schoenflies_symbol
