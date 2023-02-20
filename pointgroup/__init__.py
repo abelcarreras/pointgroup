@@ -7,6 +7,9 @@ from pointgroup import sym_tools
 
 
 class PointGroup:
+    """
+    Point group main class
+    """
 
     def __init__(self, positions, symbols, tolerance=0.01, tol=0.3):
         self._tolerance = tolerance
@@ -47,15 +50,35 @@ class PointGroup:
         # print(len(self._sym_op))
 
     def get_point_group(self):
+        """
+        get the point symmetry group symbol
+
+        :return: the point symmetry group symbol
+        """
         return self.schoenflies_symbol
 
     def get_standard_coordinates(self):
+        """
+        get the coordinates centered in the center of mass
+
+        :return: the coordinates
+        """
         return self._cent_coord
 
     def get_principal_axis_of_inertia(self):
+        """
+        get the principal axis of inertia in rows
+
+        :return: the principal axis of inertia
+        """
         return self._eigenvectors
 
-    def get_principal_modes_of_inertia(self):
+    def get_principal_momenta_of_inertia(self):
+        """
+        get the principal momenta of inertia
+
+        :return: list of momenta of inertia
+        """
         return self._eigenvalues
 
     # internal methods
