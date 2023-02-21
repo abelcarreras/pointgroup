@@ -11,9 +11,9 @@ class PointGroup:
     Point group main class
     """
 
-    def __init__(self, positions, symbols, tolerance=0.01, tol=0.3):
-        self._tolerance = tolerance
-        self._tolerance_2 = tol
+    def __init__(self, positions, symbols, tolerance_eig=0.01, tolerance_op=0.3):
+        self._tolerance_eig = tolerance_eig
+        self._tolerance_op = tolerance_op
         self._symbols = symbols
         self._sym_op = []
         self._rot_sym = []
@@ -23,6 +23,8 @@ class PointGroup:
         # determine inertia tensor
         inertia_tensor = sym_tools.get_inertia_tensor(self._symbols, self._cent_coord)
         eigenvalues, eigenvectors = np.linalg.eigh(inertia_tensor)
+        self._axis_of_inertia = eigenvectors.T
+
         self._cent_coord = np.dot(self._cent_coord, eigenvectors)
         eigenvectors = np.dot(eigenvectors, eigenvectors.T)
         self._eigenvalues = eigenvalues
@@ -30,16 +32,16 @@ class PointGroup:
 
         self.schoenflies_symbol = ''
         val = self._eigenvalues
-        if any([i < self._tolerance for i in val]):
+        if any([i < self._tolerance_eig for i in val]):
             # Linear groups
             self._lineal()
-        elif (abs(val[0] - val[1]) < self._tolerance and
-              abs(val[0] - val[2]) < self._tolerance):
+        elif (abs(val[0] - val[1]) < self._tolerance_eig and
+              abs(val[0] - val[2]) < self._tolerance_eig):
             # Spherical group
             self._spherical()
-        elif (abs(val[0] - val[1]) > self._tolerance and
-              abs(val[1] - val[2]) > self._tolerance and
-              abs(val[0] - val[2]) > self._tolerance):
+        elif (abs(val[0] - val[1]) > self._tolerance_eig and
+              abs(val[1] - val[2]) > self._tolerance_eig and
+              abs(val[0] - val[2]) > self._tolerance_eig):
             # Asymmetric group
             self._asymmetric()
         else:
@@ -59,27 +61,27 @@ class PointGroup:
 
     def get_standard_coordinates(self):
         """
-        get the coordinates centered in the center of mass
+        get the coordinates centered in the center of mass and oriented along principal axis of inertia
 
         :return: the coordinates
         """
-        return self._cent_coord
+        return self._cent_coord.tolist()
 
     def get_principal_axis_of_inertia(self):
         """
-        get the principal axis of inertia in rows
+        get the principal axis of inertia in rows in increasing order of momenta of inertia
 
         :return: the principal axis of inertia
         """
-        return self._eigenvectors
+        return self._axis_of_inertia.tolist()
 
     def get_principal_momenta_of_inertia(self):
         """
-        get the principal momenta of inertia
+        get the principal momenta of inertia in increasing order
 
         :return: list of momenta of inertia
         """
-        return self._eigenvalues
+        return self._eigenvalues.tolist()
 
     # internal methods
     def _lineal(self):
@@ -106,9 +108,9 @@ class PointGroup:
 
     def _symmetric(self):
 
-        if abs(self._eigenvalues[0] - self._eigenvalues[1]) < self._tolerance:
+        if abs(self._eigenvalues[0] - self._eigenvalues[1]) < self._tolerance_eig:
             idx = 2
-        elif abs(self._eigenvalues[0] - self._eigenvalues[2]) < self._tolerance:
+        elif abs(self._eigenvalues[0] - self._eigenvalues[2]) < self._tolerance_eig:
             idx = 1
         else:
             idx = 0
@@ -317,7 +319,7 @@ class PointGroup:
             for vector, order in non_repeated_vectors:
                 diff = abs(element[0] - vector)
                 add = abs(element[0] + vector)
-                if (all(diff < self._tolerance_2) or all(add < self._tolerance_2)) \
+                if (all(diff < self._tolerance_op) or all(add < self._tolerance_op)) \
                         and element[1] == order:
                     non_repeated = False
             if non_repeated:
