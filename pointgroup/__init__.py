@@ -70,7 +70,7 @@ class PointGroup:
         """
         return self._eigenvectors.tolist()
 
-    def get_principal_momenta_of_inertia(self):
+    def get_principal_moments_of_inertia(self):
         """
         get the principal momenta of inertia in increasing order
 
