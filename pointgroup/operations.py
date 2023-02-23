@@ -27,20 +27,8 @@ def rotation_matrix(axis, angle):
     return r
 
 
-def reflection(normal):
-    n = normal / np.linalg.norm(normal)
+def reflection(reflection_axis):
+    uax = np.dot(reflection_axis, reflection_axis)
 
-    ref = np.zeros((3, 3))
+    return np.identity(3) - 2*np.outer(reflection_axis, reflection_axis)/uax
 
-    # Reflexion matrix
-    ref[0, 0] = 1 - 2 * n[0] ** 2
-    ref[0, 1] = 2 * n[0] * n[1]
-    ref[0, 2] = 2 * n[0] * n[2]
-    ref[1, 0] = ref[0, 1]
-    ref[1, 1] = 1 - 2 * n[1] ** 2
-    ref[1, 2] = 2 * n[1] * n[2]
-    ref[2, 0] = ref[0, 2]
-    ref[2, 1] = ref[1, 2]
-    ref[2, 2] = 1 - 2 * n[2] ** 2
-
-    return ref
