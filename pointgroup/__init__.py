@@ -11,11 +11,11 @@ class PointGroup:
     Point group main class
     """
 
-    def __init__(self, positions, symbols, tolerance_eig=0.01, tolerance_op=0.02):
+    def __init__(self, positions, symbols, tolerance_eig=0.01, tolerance_ang=2):
         self._tolerance_eig = tolerance_eig
-        self._tolerance_op = tolerance_op
+        self._tolerance_ang = tolerance_ang  # in degrees
         self._symbols = symbols
-        self._max_order = 0
+        self._max_order = 1
         self._cent_coord = np.array(positions) - tools.get_center_mass(self._symbols, np.array(positions))
 
         # determine inertia tensor
@@ -29,22 +29,29 @@ class PointGroup:
         self._eigenvectors = eigenvectors.T
 
         self.schoenflies_symbol = ''
-        val = self._eigenvalues
-        if any([i < self._tolerance_eig for i in val]):
+
+        #eig_degeneracy = 4 - len(np.unique(self._eigenvalues.round(decimals=2)))
+
+        #print('ini:', eig_degeneracy)
+        #print(self._eigenvalues)
+
+        eig_degeneracy = tools.get_degeneracy(self._eigenvalues, self._tolerance_eig)
+
+        if abs(np.min(self._eigenvalues)) < self._tolerance_eig:
             # Linear groups
             self._lineal()
-        elif (abs(val[0] - val[1]) < self._tolerance_eig and
-              abs(val[0] - val[2]) < self._tolerance_eig):
-            # Spherical group
-            self._spherical()
-        elif (abs(val[0] - val[1]) > self._tolerance_eig and
-              abs(val[1] - val[2]) > self._tolerance_eig and
-              abs(val[0] - val[2]) > self._tolerance_eig):
+        elif eig_degeneracy == 1:
             # Asymmetric group
             self._asymmetric()
-        else:
+        elif eig_degeneracy == 2:
             # Symmetric group
             self._symmetric()
+        elif eig_degeneracy == 3:
+            # Spherical group
+            self._spherical()
+        else:
+            print('deg', eig_degeneracy)
+            raise Exception('Group type error')
 
     def get_point_group(self):
         """
@@ -107,34 +114,28 @@ class PointGroup:
         if n_c2 == 0:
             self._no_rot_axis()
         elif n_c2 == 1:
-            self._cyclic(main_axis, 2)
+            self._cyclic(main_axis)
         else:
-            self._dihedral(main_axis, 2)
+            self._dihedral(main_axis)
 
     def _symmetric(self):
 
-        if abs(self._eigenvalues[0] - self._eigenvalues[1]) < self._tolerance_eig:
-            idx = 2
-        elif abs(self._eigenvalues[0] - self._eigenvalues[2]) < self._tolerance_eig:
-            idx = 1
-        else:
-            idx = 0
-
-        main_axis = self._eigenvectors[idx, :]
+        idx = tools.get_non_degenerated(self._eigenvalues, self._tolerance_eig)
+        main_axis = self._eigenvectors[idx]
 
         n_order = self._get_axis_rot_order(main_axis, n_max=9)
         self._max_order = n_order
 
         p_axis = tools.get_perpendicular(main_axis)
-        for angle in np.arange(0, 180, 2):
+        for angle in np.arange(0, 360/n_order, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
             c2 = rotation_matrix(axis, 360 / 2)
             if self._check_op(c2):
-                self._dihedral(main_axis, n_order)
+                self._dihedral(main_axis)
                 self._set_orientation(main_axis, axis)
                 return
 
-        self._cyclic(main_axis, n_order)
+        self._cyclic(main_axis)
 
     def _spherical(self):
         """
@@ -143,11 +144,11 @@ class PointGroup:
         :return:
         """
 
-        def get_axis_list(step=2):
+        def get_axis_list():
             for ev in np.identity(3):
                 yield ev
-            for yaw in np.arange(0, 180, step):
-                for pitch in np.arange(0, 180, step):
+            for yaw in np.arange(0, 180, self._tolerance_ang):
+                for pitch in np.arange(0, 180, self._tolerance_ang):
                     x = np.cos(yaw) * np.cos(pitch)
                     y = np.sin(yaw) * np.cos(pitch)
                     z = np.sin(pitch)
@@ -184,7 +185,7 @@ class PointGroup:
 
             # set molecule orientation in I
             p_axis = tools.get_perpendicular(main_axis)
-            for angle in np.arange(0, 180, 2):
+            for angle in np.arange(0, 360 / self._max_order, self._tolerance_ang):
                 axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
                 c2 = rotation_matrix(axis, 360 / 2)
                 if self._check_op(c2):
@@ -200,7 +201,7 @@ class PointGroup:
 
             # set molecule orientation in O
             p_axis = tools.get_perpendicular(main_axis)
-            for angle in np.arange(0, 90, 2):
+            for angle in np.arange(0, 360 / self._max_order, self._tolerance_ang):
                 axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
                 c4 = rotation_matrix(axis, 360 / 4)
                 if self._check_op(c4):
@@ -216,7 +217,7 @@ class PointGroup:
             # set molecule orientation in T
             def determine_orientation():
                 t_axis = np.dot(rotation_matrix(p_axis, np.rad2deg(np.arccos(-1/3))/2), main_axis)
-                for angle in np.arange(0, 180, 2):
+                for angle in np.arange(0, 360 / self._max_order, 2):
                     axis = np.dot(t_axis, rotation_matrix(main_axis, angle))
 
                     c2 = rotation_matrix(axis, 360 / 2)
@@ -234,7 +235,7 @@ class PointGroup:
                 self.schoenflies_symbol += 'h'
 
             t_axis = np.dot(rotation_matrix(p_axis, 90), main_axis)
-            for angle in np.arange(0, 180, 2):
+            for angle in np.arange(0, 360 / self._max_order, self._tolerance_ang):
                 axis = np.dot(t_axis, rotation_matrix(main_axis, angle))
 
                 if self._check_op(reflection(axis)):
@@ -255,38 +256,38 @@ class PointGroup:
                 else:
                     self.schoenflies_symbol = 'C1'
 
-    def _cyclic(self, main_axis=0, order=0):
+    def _cyclic(self, main_axis):
 
-        self.schoenflies_symbol = "C{}".format(order)
+        self.schoenflies_symbol = "C{}".format(self._max_order)
 
         if self._check_op(reflection(main_axis)):
             self.schoenflies_symbol += 'h'
             return
 
         p_axis = tools.get_perpendicular(main_axis)
-        for angle in np.arange(0, 180, 2):
+        for angle in np.arange(0, 360 / self._max_order, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
             if self._check_op(reflection(axis)):
                 self.schoenflies_symbol += 'v'
                 self._set_orientation(main_axis, axis)
                 break
 
-        Cn = rotation_matrix(main_axis, 360 / (2*order))
+        Cn = rotation_matrix(main_axis, 360 / (2*self._max_order))
         Sn = np.dot(Cn, reflection(main_axis))
         if self._check_op(Sn):
-            self.schoenflies_symbol = "S{}".format(2*order)
+            self.schoenflies_symbol = "S{}".format(2*self._max_order)
             return
 
-    def _dihedral(self, main_axis, order):
+    def _dihedral(self, main_axis):
 
-        self.schoenflies_symbol = "D{}".format(order)
+        self.schoenflies_symbol = "D{}".format(self._max_order)
 
         if self._check_op(reflection(main_axis)):
             self.schoenflies_symbol += 'h'
             return
 
         p_axis = tools.get_perpendicular(main_axis)
-        for angle in np.arange(0, 180, 2):
+        for angle in np.arange(0, 360/self._max_order, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
             if self._check_op(reflection(axis)):
                 self.schoenflies_symbol += 'd'
@@ -301,8 +302,8 @@ class PointGroup:
         :return: order
         """
 
-        order = 0
-        for i in list(range(2, n_max)):
+        order = 1
+        for i in range(2, n_max):
             Cn = rotation_matrix(axis, 360 / i)
             if self._check_op(Cn):
                 order = i
@@ -316,19 +317,25 @@ class PointGroup:
         :return: True or False
         """
 
-        def find_atom_in_list(atom, tol):
-            atom_ind = []
-            difference = [np.sqrt(np.sum(x)) for x in np.square(self._cent_coord - atom)]
-            for idx, dif in enumerate(difference < np.sqrt(tol)):
-                if dif:
-                    atom_ind.append(idx)
-            return atom_ind
+        for idx, atom_coord in enumerate(self._cent_coord):
 
-        for idx, atom in enumerate(self._cent_coord):
-            atom_op = np.dot(sym_matrix, atom)
-            ind = find_atom_in_list(atom_op, self._tolerance_op)
-            if not (len(ind) == 1 and self._symbols[ind[0]] == self._symbols[idx]):
+            atom_op = np.dot(sym_matrix, atom_coord)
+
+            radii = np.linalg.norm(self._cent_coord, axis=1)
+            radii = (radii + np.linalg.norm(atom_op)) / 2
+            radii = np.clip(radii, 1e-3, None)
+
+            difference_rad = np.linalg.norm(self._cent_coord - atom_op, axis=1)/radii
+
+            def check_diff(diff):
+                for idx_2, d in enumerate(diff):
+                    if self._symbols[idx_2] == self._symbols[idx] and d < np.deg2rad(self._tolerance_ang):
+                        return True
                 return False
+
+            if not check_diff(difference_rad):
+                return False
+
         return True
 
     def _set_orientation(self, main_axis, p_axis):

@@ -44,3 +44,30 @@ def get_perpendicular(vector):
     p_vector = np.array([0, 0, 0])
     p_vector[index] = 1
     return np.cross(vector, p_vector)/np.linalg.norm(np.cross(vector, p_vector))
+
+
+def get_degeneracy(eigenvalues, tolerance=0.1):
+
+    for ev1 in eigenvalues:
+        single_deg = 0
+        for ev2 in eigenvalues:
+            if abs(ev1 - ev2) < tolerance:
+                single_deg += 1
+        if single_deg > 1:
+            return single_deg
+    return 1
+
+
+def get_non_degenerated(eigenvalues, tolerance=0.1):
+
+    for i, ev1 in enumerate(eigenvalues):
+        single_deg = 0
+        index = 0
+        for ev2 in eigenvalues:
+            if not abs(ev1 - ev2) < tolerance:
+                single_deg += 1
+                index = i
+        if single_deg == 2:
+            return index
+
+    raise Exception('Non degenerate not found')
