@@ -15,7 +15,6 @@ class PointGroup:
         self._tolerance_eig = tolerance_eig
         self._tolerance_ang = tolerance_ang  # in degrees
         self._symbols = symbols
-        self._max_order = 1
         self._cent_coord = np.array(positions) - tools.get_center_mass(self._symbols, np.array(positions))
 
         # determine inertia tensor
@@ -28,29 +27,29 @@ class PointGroup:
         self._eigenvalues = eigenvalues
         self._eigenvectors = eigenvectors.T
 
-        self.schoenflies_symbol = ''
-
-        #eig_degeneracy = 4 - len(np.unique(self._eigenvalues.round(decimals=2)))
-
-        #print('ini:', eig_degeneracy)
-        #print(self._eigenvalues)
+        # initialize variables
+        self._schoenflies_symbol = ''
+        self._max_order = 1
 
         eig_degeneracy = tools.get_degeneracy(self._eigenvalues, self._tolerance_eig)
 
-        if abs(np.min(self._eigenvalues)) < self._tolerance_eig:
-            # Linear groups
+        # Linear groups
+        if np.min(abs(self._eigenvalues)) < self._tolerance_eig:
             self._lineal()
+
+        # Asymmetric group
         elif eig_degeneracy == 1:
-            # Asymmetric group
             self._asymmetric()
+
+        # Symmetric group
         elif eig_degeneracy == 2:
-            # Symmetric group
             self._symmetric()
+
+        # Spherical group
         elif eig_degeneracy == 3:
-            # Spherical group
             self._spherical()
+
         else:
-            print('deg', eig_degeneracy)
             raise Exception('Group type error')
 
     def get_point_group(self):
@@ -59,7 +58,7 @@ class PointGroup:
 
         :return: the point symmetry group symbol
         """
-        return self.schoenflies_symbol
+        return self._schoenflies_symbol
 
     def get_standard_coordinates(self):
         """
@@ -95,25 +94,26 @@ class PointGroup:
         self._set_orientation(main_axis, p_axis)
 
         if self._check_op(inversion()):
-            self.schoenflies_symbol = 'Dinfh'
+            self._schoenflies_symbol = 'Dinfh'
         else:
-            self.schoenflies_symbol = 'Cinfv'
+            self._schoenflies_symbol = 'Cinfv'
 
     def _asymmetric(self):
 
-        n_c2 = 0
+        n_axis_c2 = 0
         main_axis = self._eigenvectors[0]
         for axis in self._eigenvectors:
             c2 = rotation_matrix(axis, 180)
             if self._check_op(c2):
-                n_c2 += 1
+                n_axis_c2 += 1
                 main_axis = axis
 
         self._max_order = 2
 
-        if n_c2 == 0:
+        if n_axis_c2 == 0:
+            self._max_order = 0
             self._no_rot_axis()
-        elif n_c2 == 1:
+        elif n_axis_c2 == 1:
             self._cyclic(main_axis)
         else:
             self._dihedral(main_axis)
@@ -161,17 +161,17 @@ class PointGroup:
             c3 = rotation_matrix(axis, 360 / 3)
 
             if self._check_op(c5):
-                self.schoenflies_symbol = "I"
+                self._schoenflies_symbol = "I"
                 main_axis = axis
                 self._max_order = 5
                 break
             elif self._check_op(c4):
-                self.schoenflies_symbol = "O"
+                self._schoenflies_symbol = "O"
                 main_axis = axis
                 self._max_order = 4
                 break
             elif self._check_op(c3):
-                self.schoenflies_symbol = "T"
+                self._schoenflies_symbol = "T"
                 main_axis = axis
                 self._max_order = 3
 
@@ -179,9 +179,9 @@ class PointGroup:
             raise Exception('Error in spherical group')
 
         # I or Ih
-        if self.schoenflies_symbol == 'I':
+        if self._schoenflies_symbol == 'I':
             if self._check_op(inversion()):
-                self.schoenflies_symbol += 'h'
+                self._schoenflies_symbol += 'h'
 
             # set molecule orientation in I
             p_axis = tools.get_perpendicular(main_axis)
@@ -195,9 +195,9 @@ class PointGroup:
             self._set_orientation(main_axis, p_axis)
 
         # O or Oh
-        if self.schoenflies_symbol == 'O':
+        if self._schoenflies_symbol == 'O':
             if self._check_op(inversion()):
-                self.schoenflies_symbol += 'h'
+                self._schoenflies_symbol += 'h'
 
             # set molecule orientation in O
             p_axis = tools.get_perpendicular(main_axis)
@@ -211,7 +211,7 @@ class PointGroup:
             self._set_orientation(main_axis, p_axis)
 
         # T or Td, Th
-        if self.schoenflies_symbol == 'T':
+        if self._schoenflies_symbol == 'T':
             p_axis = tools.get_perpendicular(main_axis)
 
             # set molecule orientation in T
@@ -232,65 +232,65 @@ class PointGroup:
             determine_orientation()
 
             if self._check_op(inversion()):
-                self.schoenflies_symbol += 'h'
+                self._schoenflies_symbol += 'h'
 
             t_axis = np.dot(rotation_matrix(p_axis, 90), main_axis)
             for angle in np.arange(0, 360 / self._max_order, self._tolerance_ang):
                 axis = np.dot(t_axis, rotation_matrix(main_axis, angle))
 
                 if self._check_op(reflection(axis)):
-                    self.schoenflies_symbol += 'd'
+                    self._schoenflies_symbol += 'd'
                     return
 
     def _no_rot_axis(self):
         for i, vector in enumerate(self._eigenvectors):
             if self._check_op(reflection(vector)):
-                self.schoenflies_symbol = 'Cs'
+                self._schoenflies_symbol = 'Cs'
                 p_axis = tools.get_perpendicular(vector)
                 self._set_orientation(vector, p_axis)
                 break
             else:
                 self._set_orientation(self._eigenvectors[0], self._eigenvectors[1])
                 if self._check_op(inversion()):
-                    self.schoenflies_symbol = 'Ci'
+                    self._schoenflies_symbol = 'Ci'
                 else:
-                    self.schoenflies_symbol = 'C1'
+                    self._schoenflies_symbol = 'C1'
 
     def _cyclic(self, main_axis):
 
-        self.schoenflies_symbol = "C{}".format(self._max_order)
+        self._schoenflies_symbol = "C{}".format(self._max_order)
 
         if self._check_op(reflection(main_axis)):
-            self.schoenflies_symbol += 'h'
+            self._schoenflies_symbol += 'h'
             return
 
         p_axis = tools.get_perpendicular(main_axis)
         for angle in np.arange(0, 360 / self._max_order, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
             if self._check_op(reflection(axis)):
-                self.schoenflies_symbol += 'v'
+                self._schoenflies_symbol += 'v'
                 self._set_orientation(main_axis, axis)
                 break
 
         Cn = rotation_matrix(main_axis, 360 / (2*self._max_order))
         Sn = np.dot(Cn, reflection(main_axis))
         if self._check_op(Sn):
-            self.schoenflies_symbol = "S{}".format(2*self._max_order)
+            self._schoenflies_symbol = "S{}".format(2 * self._max_order)
             return
 
     def _dihedral(self, main_axis):
 
-        self.schoenflies_symbol = "D{}".format(self._max_order)
+        self._schoenflies_symbol = "D{}".format(self._max_order)
 
         if self._check_op(reflection(main_axis)):
-            self.schoenflies_symbol += 'h'
+            self._schoenflies_symbol += 'h'
             return
 
         p_axis = tools.get_perpendicular(main_axis)
         for angle in np.arange(0, 360/self._max_order, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
             if self._check_op(reflection(axis)):
-                self.schoenflies_symbol += 'd'
+                self._schoenflies_symbol += 'd'
                 break
 
     def _get_axis_rot_order(self, axis, n_max):
