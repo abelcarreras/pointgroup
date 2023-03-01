@@ -39,11 +39,16 @@ def get_inertia_tensor(elements, coord):
     return inertia_matrix
 
 
-def get_perpendicular(vector):
+def get_perpendicular(vector, tol=1e-8):
     index = np.argmin(vector)
     p_vector = np.array([0, 0, 0])
     p_vector[index] = 1
-    return np.cross(vector, p_vector)/np.linalg.norm(np.cross(vector, p_vector))
+    pp_vector = np.cross(vector, p_vector)/np.linalg.norm(np.cross(vector, p_vector))
+
+    assert np.dot(pp_vector, vector) < tol  # check perpendicular
+    assert abs(np.linalg.norm(pp_vector) - 1) < tol  # check normalized
+
+    return pp_vector
 
 
 def get_degeneracy(eigenvalues, tolerance=0.1):
