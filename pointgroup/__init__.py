@@ -1,6 +1,8 @@
 __version__ = '0.1'
 
 import itertools
+import warnings
+
 import numpy as np
 from pointgroup.operations import inversion, rotation_matrix, reflection
 from pointgroup import tools
@@ -153,28 +155,29 @@ class PointGroup:
                     yield np.array([x, y, z])
 
         main_axis = None
-        for axis in get_axis_list():
-            c5 = rotation_matrix(axis, 360 / 5)
-            c4 = rotation_matrix(axis, 360 / 4)
-            c3 = rotation_matrix(axis, 360 / 3)
+        while main_axis is None:
+            for axis in get_axis_list():
+                c5 = rotation_matrix(axis, 360 / 5)
+                c4 = rotation_matrix(axis, 360 / 4)
+                c3 = rotation_matrix(axis, 360 / 3)
 
-            if self._check_op(c5, flex=0.9):
-                self._schoenflies_symbol = "I"
-                main_axis = axis
-                self._max_order = 5
-                break
-            elif self._check_op(c4, flex=0.9):
-                self._schoenflies_symbol = "O"
-                main_axis = axis
-                self._max_order = 4
-                break
-            elif self._check_op(c3, flex=0.9):
-                self._schoenflies_symbol = "T"
-                main_axis = axis
-                self._max_order = 3
+                if self._check_op(c5, flex=0.9):
+                    self._schoenflies_symbol = "I"
+                    main_axis = axis
+                    self._max_order = 5
+                    break
+                elif self._check_op(c4, flex=0.9):
+                    self._schoenflies_symbol = "O"
+                    main_axis = axis
+                    self._max_order = 4
+                    break
+                elif self._check_op(c3, flex=0.9):
+                    self._schoenflies_symbol = "T"
+                    main_axis = axis
+                    self._max_order = 3
 
-        if main_axis is None:
-            raise Exception('Error in spherical group')
+            if main_axis is None:
+                self._tolerance_ang *= 1.1
 
         # I or Ih
         if self._schoenflies_symbol == 'I':
@@ -338,6 +341,8 @@ class PointGroup:
                 for idx_2, (d1, d2) in enumerate(zip(diff, diff2)):
                     d_t = np.linalg.norm([d1, d2])
                     if (self._symbols[idx_2] == self._symbols[idx] and d_t < np.deg2rad(self._tolerance_ang)*flex):
+                        return True
+                    # if (self._symbols[idx_2] == self._symbols[idx] and d1 < np.deg2rad(self._tolerance_ang)*flex and d2 < np.deg2rad(self._tolerance_ang)*flex):
                         return True
 
                 return False

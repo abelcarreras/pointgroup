@@ -41,9 +41,9 @@ def get_inertia_tensor(elements, coord):
 
 def get_perpendicular(vector, tol=1e-8):
     index = np.argmin(vector)
-    p_vector = np.array([0, 0, 0])
-    p_vector[index] = 1
-    pp_vector = np.cross(vector, p_vector)/np.linalg.norm(np.cross(vector, p_vector))
+    p_vector = np.identity(3)[index]
+    pp_vector = np.cross(vector, p_vector)
+    pp_vector = pp_vector / np.linalg.norm(pp_vector)
 
     assert np.dot(pp_vector, vector) < tol  # check perpendicular
     assert abs(np.linalg.norm(pp_vector) - 1) < tol  # check normalized
