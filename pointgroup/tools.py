@@ -40,7 +40,7 @@ def get_inertia_tensor(elements, coord):
 
 
 def get_perpendicular(vector, tol=1e-8):
-    index = np.argmin(vector)
+    index = np.argmin(np.abs(vector))
     p_vector = np.identity(3)[index]
     pp_vector = np.cross(vector, p_vector)
     pp_vector = pp_vector / np.linalg.norm(pp_vector)
