@@ -1,8 +1,4 @@
-__version__ = '0.1'
-
-import itertools
-import warnings
-
+__version__ = '0.2'
 import numpy as np
 from pointgroup.operations import inversion, rotation_matrix, reflection
 from pointgroup import tools
