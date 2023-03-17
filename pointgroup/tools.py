@@ -76,3 +76,30 @@ def get_non_degenerated(eigenvalues, tolerance=0.1):
             return index
 
     raise Exception('Non degenerate not found')
+
+
+def magic_formula(n):
+    return np.sqrt(n*2**(3-n))
+
+
+def rotation_matrix(axis, angle):
+    """
+    rotation matrix
+
+    :param axis: normalized axis
+    :param angle: angle in degrees
+    :return:
+    """
+
+    norm = np.linalg.norm(axis)
+    assert norm > 1e-8
+    axis = np.array(axis) / norm  # normalize axis
+
+    angle = np.deg2rad(angle)
+
+    cos_term = 1 - np.cos(angle)
+    rot_matrix = [[axis[0]**2*cos_term + np.cos(angle),              axis[0]*axis[1]*cos_term - axis[2]*np.sin(angle), axis[0]*axis[2]*cos_term + axis[1]*np.sin(angle)],
+                  [axis[1]*axis[0]*cos_term + axis[2]*np.sin(angle), axis[1]**2*cos_term + np.cos(angle),              axis[1]*axis[2]*cos_term - axis[0]*np.sin(angle)],
+                  [axis[2]*axis[0]*cos_term - axis[1]*np.sin(angle), axis[1]*axis[2]*cos_term + axis[0]*np.sin(angle), axis[2]**2*cos_term + np.cos(angle)]]
+
+    return np.array(rot_matrix)
