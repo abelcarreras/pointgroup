@@ -4,12 +4,38 @@ from pointgroup.operations import Inversion, Rotation, ImproperRotation, Reflect
 from pointgroup import tools
 
 
+def abs_to_rad(error, coord):
+    coord = np.array(coord)
+    return error / np.clip(np.linalg.norm(coord, axis=1), error, None)
+
+
+def angle_between_vector_matrix(vector, coord, tolerance=1e-5):
+    norm_coor = np.linalg.norm(coord, axis=1)
+    norm_op_coor = np.linalg.norm(vector)
+
+    angles = []
+    for v, n in zip(np.dot(vector, coord.T), norm_coor*norm_op_coor):
+        if n < tolerance:
+            angles.append(0)
+        else:
+            angles.append(np.arccos(np.clip( v/n, -1.0, 1.0)))
+    return np.array(angles)
+
+
+def radius_diff_in_radiants(vector, coord, tolerance=1e-5):
+    norm_coor = np.linalg.norm(coord, axis=1)
+    norm_op_coor = np.linalg.norm(vector)
+
+    average_radii = np.clip((norm_coor + norm_op_coor) / 2, tolerance, None)
+    return np.abs(norm_coor - norm_op_coor) / average_radii
+
+
 class PointGroup:
     """
     Point group main class
     """
 
-    def __init__(self, positions, symbols, tolerance_eig=1e-3, tolerance_ang=5):
+    def __init__(self, positions, symbols, tolerance_eig=1e-2, tolerance_ang=5):
         self._tolerance_eig = tolerance_eig
         self._tolerance_ang = tolerance_ang  # in degrees
         self._symbols = symbols
@@ -321,7 +347,6 @@ class PointGroup:
 
         for i in range(n_max, 1, -1):
             Cn = Rotation(axis, order=i)
-            # print('i', i, get_values(self._cent_coord, Cn),tools.magic_formula(i))
             if self._check_op(Cn):
                 return i
         return 1
@@ -335,71 +360,22 @@ class PointGroup:
         """
         sym_matrix = operation.get_matrix()
         flex = operation.associated_error() * flex
-        error_abs = 1e-2
+        error_abs_rad = abs_to_rad(self._tolerance_eig, coord=self._cent_coord)
+        tolerance = np.deg2rad(self._tolerance_ang)
 
+        op_coordinates = np.dot(self._cent_coord, sym_matrix.T)
+        for idx, op_coord in enumerate(op_coordinates):
 
-        if False:
-            max_val = np.max(get_values(self._cent_coord, sym_matrix))
-            if max_val < self._tolerance_ang * flex:
-                return True
-
-            else:
-                return False
-
-        #if np.max(get_values(self._cent_coord, sym_matrix)) < self._tolerance_ang * flex:
-        #    return True
-        #else:
-        #    return False
-
-        if print_data:
-            print('effective tol (deg): ', self._tolerance_ang/2*flex)
-            print('COOR operated')
-
-            operated_coor = np.dot(self._cent_coord, np.array(sym_matrix).T)
-            print('{}\n'.format(len(self._symbols)))
-            for s, c in zip(self._symbols, operated_coor):
-                print('{}'.format(s) + ' {:10.5f} {:10.5f} {:10.5f}'.format(*c))
-
-        norm_coor = np.linalg.norm(self._cent_coord, axis=1)
-        op_coordinates = np.dot(self._cent_coord, np.array(sym_matrix).T)
-        norm_op_coor = np.clip(np.linalg.norm(op_coordinates, axis=1), 1e-6, None)
-
-        error_abs_rad = np.clip(error_abs/norm_op_coor, None, error_abs)
-
-        #assert np.deg2rad(self._tolerance_ang) * flex * 1.09  < np.deg2rad(self._tolerance_ang) * flex + error_abs_rad[0]
-
-
-
-        for idx, (op_coord, op_norm) in enumerate(zip(op_coordinates, norm_op_coor)):
-
-            average_radii = np.clip((norm_coor + op_norm) / 2, 1e-3, None)
-            difference_rad = (np.abs(norm_coor - op_norm)) / average_radii
-
-            difference_ang = []
-            for c, n in zip(self._cent_coord, norm_op_coor*norm_coor):
-                if n < 1e-5:
-                    difference_ang.append(0.0)
-                else:
-                    difference_ang.append(np.arccos(np.clip(np.dot(c, op_coord)/n, -1.0, 1.0)))
-
-            if print_data:
-                print('MIN', idx, np.rad2deg(np.min(difference_ang)))
+            difference_rad = radius_diff_in_radiants(op_coord, self._cent_coord, self._tolerance_eig)
+            difference_ang = angle_between_vector_matrix(op_coord, self._cent_coord, self._tolerance_eig)
 
             def check_diff(diff, diff2):
                 for idx_2, (d1, d2) in enumerate(zip(diff, diff2)):
                     if self._symbols[idx_2] != self._symbols[idx]:
                         continue
-                    if print_data:
-                        # print('check_op', idx, idx_2, np.rad2deg(d1))
-                        pass
-                    d_r = np.linalg.norm([d1, d2])
-                    #if d_r < np.deg2rad(self._tolerance_ang)*flex:
-                    #    return True
-                    # print(error_abs_rad[idx])
-                    tolerance_total = np.deg2rad(self._tolerance_ang)*flex + error_abs_rad[idx]
-                    if (d1 <  tolerance_total and d2 < tolerance_total):
-                        if print_data:
-                            print('OK')
+                    # d_r = np.linalg.norm([d1, d2])
+                    tolerance_total = tolerance*flex + error_abs_rad[idx_2]
+                    if d1 < tolerance_total and d2 < tolerance_total:
                         return True
                 return False
 
@@ -465,8 +441,6 @@ def print_xyz(symbols, op_coordinates, label='', axis=None):
         print('H {:10.5f} {:10.5f} {:10.5f}'.format(*axis))
     for s, c in zip(symbols, op_coordinates):
         print('{}'.format(s) + ' {:10.5f} {:10.5f} {:10.5f}'.format(*c))
-
-
 
 
 def set_orientation(cent_coord, main_axis, p_axis):
