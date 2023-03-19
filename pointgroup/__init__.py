@@ -1,4 +1,4 @@
-__version__ = '0.2'
+__version__ = '0.3'
 import numpy as np
 from pointgroup.operations import Inversion, Rotation, ImproperRotation, Reflection, rotation_matrix
 from pointgroup import tools
@@ -40,9 +40,6 @@ class PointGroup:
         self._tolerance_ang = tolerance_ang  # in degrees
         self._symbols = symbols
         self._cent_coord = np.array(positions) - tools.get_center_mass(self._symbols, np.array(positions))
-
-        #from pointgroup.test import rotate_random
-        #self._cent_coord = rotate_random(self._cent_coord, symbols, print_data=False)
 
         self._ref_orientation = np.identity(3)
 
@@ -193,14 +190,10 @@ class PointGroup:
                     self._schoenflies_symbol = "T"
                     main_axis = axis
                     self._max_order = 3
-                    #break
 
             if main_axis is None:
                 print('increase tolerance')
                 self._tolerance_ang *= 1.1
-
-        #from pointgroup.test import get_angle_errors
-        #print('axis', main_axis, 'angle error: ', np.rad2deg(get_angle_errors(self._cent_coord, main_axis)))
 
         p_axis = tools.get_perpendicular(main_axis)
 
@@ -222,7 +215,6 @@ class PointGroup:
             if self._check_op(Inversion()):
                 self._schoenflies_symbol += 'h'
 
-
         # O or Oh
         if self._schoenflies_symbol == 'O':
 
@@ -243,7 +235,7 @@ class PointGroup:
         if self._schoenflies_symbol == 'T':
 
             # set molecule orientation in T
-            def determine_orientation():
+            def determine_orientation_T():
                 r_matrix = rotation_matrix(p_axis, -np.rad2deg(np.arccos(-1/3)))
                 axis = np.dot(main_axis, r_matrix.T)
 
@@ -261,24 +253,16 @@ class PointGroup:
                         t_axis = np.dot(t_axis, rot_matrix.T)
                         self._set_orientation(main_axis, t_axis)
 
-                        #print('OK')
-                        #print_xyz(self._symbols, self._cent_coord, axis=[0, 0, 1])
-                        # print('val_norm', max_val, tools.magic_formula(2)*np.sqrt(3))  ##
-
-                        return [1, 0, 0]
+                        return
 
                 raise Exception('Error orientation T group')
 
-            main_axis = determine_orientation()
+            determine_orientation_T()
 
-            #max_val = np.max(get_values(self._cent_coord, reflection([0, 0, 1])))
-            #print('val_norm', max_val)
-            #return
             if self._check_op(Inversion()):
                 self._schoenflies_symbol += 'h'
                 return
 
-            #assert max_val < self._tolerance_ang*np.sqrt(3)
             if self._check_op(Reflection([0, 0, 1]), flex=np.sqrt(3)*1.1):
                 self._schoenflies_symbol += 'd'
                 return
@@ -404,62 +388,3 @@ class PointGroup:
         orientation = np.array([main_axis, p_axis, np.cross(main_axis, p_axis)])
         self._cent_coord = np.dot(self._cent_coord, orientation.T)
         self._ref_orientation = np.dot(self._ref_orientation, orientation.T)
-
-
-def get_values(cent_coord, sym_matrix):
-
-    norm_coor = np.linalg.norm(cent_coord, axis=1)
-    op_coordinates = np.dot(cent_coord, np.array(sym_matrix).T)
-    norm_op_coor = np.linalg.norm(op_coordinates, axis=1)
-
-    #print_xyz(symbols, op_coordinates)
-
-    dist_list = []
-    for idx, (op_coord, op_norm) in enumerate(zip(op_coordinates, norm_op_coor)):
-
-        #average_radii = np.clip((norm_coor + op_norm) / 2, 1e-3, None)
-        #difference_rad = (np.abs(norm_coor - op_norm)) / average_radii
-
-        difference_ang = []
-        for c, n in zip(cent_coord, norm_op_coor * norm_coor):
-            if n < 1e-3:
-                difference_ang.append(0.0)
-            else:
-                difference_ang.append(np.arccos(np.clip(np.dot(c, op_coord) / n, -1.0, 1.0)))
-
-        dist_list.append(np.min(np.abs(difference_ang)))
-
-    return np.rad2deg(dist_list)
-
-
-def print_xyz(symbols, op_coordinates, label='', axis=None):
-    n_extra = 1 if axis is None else 2
-    print('{}\n{}'.format(len(symbols) + n_extra, label))
-    print('H 0 0 0')
-    #print('H 1 0 0')
-    if axis is not None:
-        print('H {:10.5f} {:10.5f} {:10.5f}'.format(*axis))
-    for s, c in zip(symbols, op_coordinates):
-        print('{}'.format(s) + ' {:10.5f} {:10.5f} {:10.5f}'.format(*c))
-
-
-def set_orientation(cent_coord, main_axis, p_axis):
-    """
-    set molecular orientation along main_axis (x) and p_axis (y).
-
-    :param main_axis: principal orientation axis (must be unitary)
-    :param p_axis: secondary axis perpendicular to principal (must be unitary)
-    :return:
-    """
-
-    assert np.linalg.norm(main_axis) > 1e-1
-    assert np.linalg.norm(p_axis) > 1e-1
-
-    assert np.dot(main_axis, p_axis) < 1e-1
-
-    main_axis = np.array(main_axis)/np.linalg.norm(main_axis)
-    p_axis = np.array(p_axis)/np.linalg.norm(p_axis)
-
-    orientation = np.array([main_axis, p_axis, np.cross(main_axis, p_axis)])
-    cent_coord = np.dot(cent_coord, orientation.T)
-    return cent_coord
