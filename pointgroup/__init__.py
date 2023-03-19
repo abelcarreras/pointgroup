@@ -193,23 +193,30 @@ class PointGroup:
 
             if main_axis is None:
                 print('increase tolerance')
-                self._tolerance_ang *= 1.1
+                self._tolerance_ang *= 1.01
 
-        p_axis = tools.get_perpendicular(main_axis)
+        p_axis_base = tools.get_perpendicular(main_axis)
 
         # I or Ih
         if self._schoenflies_symbol == 'I':
-            r_matrix = rotation_matrix(p_axis, np.arcsin((np.sqrt(5)+1)/(2*np.sqrt(3))))
-            axis = np.dot(main_axis, r_matrix.T)
+            def determine_orientation_I(main_axis):
+                r_matrix = rotation_matrix(p_axis_base, np.arcsin((np.sqrt(5)+1)/(2*np.sqrt(3))))
+                axis = np.dot(main_axis, r_matrix.T)
 
-            # set molecule orientation in I
-            for angle in np.arange(0, 360 / self._max_order+self._tolerance_ang, self._tolerance_ang*2):
-                c5_axis = np.dot(axis, rotation_matrix(main_axis, angle))
-                c5 = Rotation(c5_axis, order=5)
-                if self._check_op(c5):
-                    p_axis = np.dot(main_axis, rotation_matrix(p_axis, 90))
-                    break
+                # set molecule orientation in I
+                for angle in np.arange(0, 360 / self._max_order+self._tolerance_ang, self._tolerance_ang):
+                    rot_matrix = rotation_matrix(main_axis, angle)
 
+                    c5_axis = np.dot(axis, rot_matrix.T)
+                    c5 = Rotation(c5_axis, order=5)
+
+                    if self._check_op(c5, tol_factor=1.2):
+                        t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, 90).T)
+                        return np.dot(t_axis, rot_matrix.T)
+
+                raise Exception('Error orientation I group')
+
+            p_axis = determine_orientation_I(main_axis)
             self._set_orientation(main_axis, p_axis)
 
             if self._check_op(Inversion()):
@@ -219,13 +226,22 @@ class PointGroup:
         if self._schoenflies_symbol == 'O':
 
             # set molecule orientation in O
-            for angle in np.arange(0, 180 / self._max_order+self._tolerance_ang, self._tolerance_ang*2):
-                axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
-                c4 = Rotation(axis, order=4)
-                if self._check_op(c4):
-                    p_axis = axis
-                    break
+            def determine_orientation_O(main_axis):
+                r_matrix = rotation_matrix(p_axis_base, 90)
+                axis = np.dot(main_axis, r_matrix.T)
 
+                for angle in np.arange(0, 360 / self._max_order+self._tolerance_ang, self._tolerance_ang):
+                    rot_matrix = rotation_matrix(main_axis, angle)
+
+                    c4_axis = np.dot(axis, rot_matrix.T)
+                    c4 = Rotation(c4_axis, order=4)
+
+                    if self._check_op(c4, tol_factor=1.2):
+                        return axis
+
+                raise Exception('Error orientation O group')
+
+            p_axis = determine_orientation_O(main_axis)
             self._set_orientation(main_axis, p_axis)
 
             if self._check_op(Inversion()):
@@ -235,35 +251,30 @@ class PointGroup:
         if self._schoenflies_symbol == 'T':
 
             # set molecule orientation in T
-            def determine_orientation_T():
-                r_matrix = rotation_matrix(p_axis, -np.rad2deg(np.arccos(-1/3)))
+            def determine_orientation_T(main_axis):
+                r_matrix = rotation_matrix(p_axis_base, -np.rad2deg(np.arccos(-1/3)))
                 axis = np.dot(main_axis, r_matrix.T)
 
-                # val_list = [] ##
                 for angle in np.arange(0, 360 / self._max_order + self._tolerance_ang, self._tolerance_ang):
-
                     rot_matrix = rotation_matrix(main_axis, angle)
 
                     c3_axis = np.dot(axis, rot_matrix.T)
                     c3 = Rotation(c3_axis, order=3)
 
-                    if self._check_op(c3, flex=1.1):
-
-                        t_axis = np.dot(main_axis, rotation_matrix(p_axis, 90).T)
-                        t_axis = np.dot(t_axis, rot_matrix.T)
-                        self._set_orientation(main_axis, t_axis)
-
-                        return
+                    if self._check_op(c3, tol_factor=1.1):
+                        t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, 90).T)
+                        return np.dot(t_axis, rot_matrix.T)
 
                 raise Exception('Error orientation T group')
 
-            determine_orientation_T()
+            p_axis = determine_orientation_T(main_axis)
+            self._set_orientation(main_axis, p_axis)
 
             if self._check_op(Inversion()):
                 self._schoenflies_symbol += 'h'
                 return
 
-            if self._check_op(Reflection([0, 0, 1]), flex=np.sqrt(3)*1.1):
+            if self._check_op(Reflection([0, 0, 1]), tol_factor=np.sqrt(3) * 1.1):
                 self._schoenflies_symbol += 'd'
                 return
 
@@ -285,14 +296,14 @@ class PointGroup:
 
         self._schoenflies_symbol = "C{}".format(self._max_order)
 
-        if self._check_op(Reflection(main_axis), flex=0.0):
+        if self._check_op(Reflection(main_axis), tol_factor=0.0):
             self._schoenflies_symbol += 'h'
             return
 
         p_axis = tools.get_perpendicular(main_axis)
         for angle in np.arange(0, 360 / self._max_order+self._tolerance_ang, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
-            if self._check_op(Reflection(axis), flex=1/tools.magic_formula(2)):
+            if self._check_op(Reflection(axis), tol_factor=1 / tools.magic_formula(2)):
                 self._schoenflies_symbol += 'v'
                 self._set_orientation(main_axis, axis)
                 break
@@ -309,14 +320,14 @@ class PointGroup:
 
         self._schoenflies_symbol = "D{}".format(self._max_order)
 
-        if self._check_op(Reflection(main_axis), flex=0.0):
+        if self._check_op(Reflection(main_axis), tol_factor=0.0):
             self._schoenflies_symbol += 'h'
             return
 
         p_axis = tools.get_perpendicular(main_axis)
         for angle in np.arange(0, 360/self._max_order+self._tolerance_ang, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
-            if self._check_op(Reflection(axis), flex=1/tools.magic_formula(2)):
+            if self._check_op(Reflection(axis), tol_factor=1 / tools.magic_formula(2)):
                 self._schoenflies_symbol += 'd'
                 return
 
@@ -335,7 +346,7 @@ class PointGroup:
                 return i
         return 1
 
-    def _check_op(self, operation, print_data=False, flex=1.0):
+    def _check_op(self, operation, print_data=False, tol_factor=1.0):
         """
         check if operation exists
 
@@ -343,7 +354,7 @@ class PointGroup:
         :return: True or False
         """
         sym_matrix = operation.get_matrix()
-        flex = operation.associated_error() * flex
+        tol_factor = operation.associated_error() * tol_factor
         error_abs_rad = abs_to_rad(self._tolerance_eig, coord=self._cent_coord)
         tolerance = np.deg2rad(self._tolerance_ang)
 
@@ -358,7 +369,7 @@ class PointGroup:
                     if self._symbols[idx_2] != self._symbols[idx]:
                         continue
                     # d_r = np.linalg.norm([d1, d2])
-                    tolerance_total = tolerance*flex + error_abs_rad[idx_2]
+                    tolerance_total = tolerance * tol_factor + error_abs_rad[idx_2]
                     if d1 < tolerance_total and d2 < tolerance_total:
                         return True
                 return False
