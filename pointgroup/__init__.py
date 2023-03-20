@@ -39,7 +39,7 @@ class PointGroup:
                  positions,  # atomic positions
                  symbols,  # atomic symbols
                  tolerance_eig=1e-2,  # inertia tensor precision
-                 tolerance_ang=5  # angular tolerance in degrees
+                 tolerance_ang=4  # angular tolerance in degrees
                  ):
 
         self._tolerance_eig = tolerance_eig
