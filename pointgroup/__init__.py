@@ -177,7 +177,7 @@ class PointGroup:
 
         main_axis = None
         while main_axis is None:
-            for axis in get_cubed_sphere_grid_points(self._tolerance_ang*2):
+            for axis in get_cubed_sphere_grid_points(self._tolerance_ang):
                 c5 = Rotation(axis, order=5)
                 c4 = Rotation(axis, order=4)
                 c3 = Rotation(axis, order=3)
@@ -216,7 +216,7 @@ class PointGroup:
                     c5_axis = np.dot(axis, rot_matrix.T)
                     c5 = Rotation(c5_axis, order=5)
 
-                    if self._check_op(c5, tol_factor=tools.magic_formula(5)*1.2):
+                    if self._check_op(c5, tol_factor=tools.magic_formula(5)*np.sqrt(2)):
                         t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, np.pi/2).T)
                         return np.dot(t_axis, rot_matrix.T)
 
@@ -242,7 +242,7 @@ class PointGroup:
                     c4_axis = np.dot(axis, rot_matrix.T)
                     c4 = Rotation(c4_axis, order=4)
 
-                    if self._check_op(c4, tol_factor=tools.magic_formula(4)*1.2):
+                    if self._check_op(c4, tol_factor=tools.magic_formula(4)*np.sqrt(2)):
                         return axis
 
                 raise Exception('Error orientation O group')
@@ -267,7 +267,7 @@ class PointGroup:
                     c3_axis = np.dot(axis, rot_matrix.T)
                     c3 = Rotation(c3_axis, order=3)
 
-                    if self._check_op(c3, tol_factor=tools.magic_formula(3)*1.1):
+                    if self._check_op(c3, tol_factor=tools.magic_formula(3)*np.sqrt(2)):
                         t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, np.pi/2).T)
                         return np.dot(t_axis, rot_matrix.T)
 
@@ -280,7 +280,7 @@ class PointGroup:
                 self._schoenflies_symbol += 'h'
                 return
 
-            if self._check_op(Reflection([0, 0, 1]), tol_factor=tools.magic_formula(2) * np.sqrt(3) * 1.1):
+            if self._check_op(Reflection([0, 0, 1]), tol_factor=tools.magic_formula(2) * np.sqrt(3 * 2)):
                 self._schoenflies_symbol += 'd'
                 return
 
