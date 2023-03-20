@@ -16,7 +16,7 @@ class Rotation:
 
     def get_matrix(self):
 
-        return rotation_matrix(self._axis, 360 / self._order)
+        return rotation_matrix(self._axis, 2*np.pi / self._order)
 
 
 class ImproperRotation:
@@ -27,7 +27,7 @@ class ImproperRotation:
 
     def get_matrix(self):
 
-        rot_matrix = rotation_matrix(self._axis, 360 / self._order)
+        rot_matrix = rotation_matrix(self._axis, 2*np.pi / self._order)
 
         uax = np.dot(self._axis, self._axis)
         refl_matrix = np.identity(3) - 2 * np.outer(self._axis, self._axis) / uax

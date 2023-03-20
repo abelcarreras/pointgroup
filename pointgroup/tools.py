@@ -87,15 +87,13 @@ def rotation_matrix(axis, angle):
     rotation matrix
 
     :param axis: normalized axis
-    :param angle: angle in degrees
+    :param angle: angle in radians
     :return:
     """
 
     norm = np.linalg.norm(axis)
     assert norm > 1e-8
     axis = np.array(axis) / norm  # normalize axis
-
-    angle = np.deg2rad(angle)
 
     cos_term = 1 - np.cos(angle)
     rot_matrix = [[axis[0]**2*cos_term + np.cos(angle),              axis[0]*axis[1]*cos_term - axis[2]*np.sin(angle), axis[0]*axis[2]*cos_term + axis[1]*np.sin(angle)],

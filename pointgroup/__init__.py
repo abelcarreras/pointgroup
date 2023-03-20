@@ -35,9 +35,15 @@ class PointGroup:
     Point group main class
     """
 
-    def __init__(self, positions, symbols, tolerance_eig=1e-2, tolerance_ang=5):
+    def __init__(self,
+                 positions,  # atomic positions
+                 symbols,  # atomic symbols
+                 tolerance_eig=1e-2,  # inertia tensor precision
+                 tolerance_ang=5  # angular tolerance in degrees
+                 ):
+
         self._tolerance_eig = tolerance_eig
-        self._tolerance_ang = tolerance_ang  # in degrees
+        self._tolerance_ang = np.deg2rad(tolerance_ang)
         self._symbols = symbols
         self._cent_coord = np.array(positions) - tools.get_center_mass(self._symbols, np.array(positions))
 
@@ -150,7 +156,7 @@ class PointGroup:
         self._max_order = self._get_axis_rot_order(main_axis, n_max=9)
 
         p_axis = tools.get_perpendicular(main_axis)
-        for angle in np.arange(0, 360/self._max_order+self._tolerance_ang, self._tolerance_ang):
+        for angle in np.arange(0, 2*np.pi/self._max_order+self._tolerance_ang, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
             c2 = Rotation(axis, order=2)
             if self._check_op(c2):
@@ -171,7 +177,7 @@ class PointGroup:
 
         main_axis = None
         while main_axis is None:
-            for axis in get_cubed_sphere_grid_points(np.deg2rad(self._tolerance_ang)*2):
+            for axis in get_cubed_sphere_grid_points(self._tolerance_ang*2):
                 c5 = Rotation(axis, order=5)
                 c4 = Rotation(axis, order=4)
                 c3 = Rotation(axis, order=3)
@@ -204,14 +210,14 @@ class PointGroup:
                 axis = np.dot(main_axis, r_matrix.T)
 
                 # set molecule orientation in I
-                for angle in np.arange(0, 360 / self._max_order+self._tolerance_ang, self._tolerance_ang):
+                for angle in np.arange(0, 2*np.pi / self._max_order+self._tolerance_ang, self._tolerance_ang):
                     rot_matrix = rotation_matrix(main_axis, angle)
 
                     c5_axis = np.dot(axis, rot_matrix.T)
                     c5 = Rotation(c5_axis, order=5)
 
                     if self._check_op(c5, tol_factor=tools.magic_formula(5)*1.2):
-                        t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, 90).T)
+                        t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, np.pi/2).T)
                         return np.dot(t_axis, rot_matrix.T)
 
                 raise Exception('Error orientation I group')
@@ -227,10 +233,10 @@ class PointGroup:
 
             # set molecule orientation in O
             def determine_orientation_O(main_axis):
-                r_matrix = rotation_matrix(p_axis_base, 90)
+                r_matrix = rotation_matrix(p_axis_base, np.pi/2)
                 axis = np.dot(main_axis, r_matrix.T)
 
-                for angle in np.arange(0, 360 / self._max_order+self._tolerance_ang, self._tolerance_ang):
+                for angle in np.arange(0, 2*np.pi / self._max_order+self._tolerance_ang, self._tolerance_ang):
                     rot_matrix = rotation_matrix(main_axis, angle)
 
                     c4_axis = np.dot(axis, rot_matrix.T)
@@ -252,17 +258,17 @@ class PointGroup:
 
             # set molecule orientation in T
             def determine_orientation_T(main_axis):
-                r_matrix = rotation_matrix(p_axis_base, -np.rad2deg(np.arccos(-1/3)))
+                r_matrix = rotation_matrix(p_axis_base, -np.arccos(-1/3))
                 axis = np.dot(main_axis, r_matrix.T)
 
-                for angle in np.arange(0, 360 / self._max_order + self._tolerance_ang, self._tolerance_ang):
+                for angle in np.arange(0, 2*np.pi / self._max_order + self._tolerance_ang, self._tolerance_ang):
                     rot_matrix = rotation_matrix(main_axis, angle)
 
                     c3_axis = np.dot(axis, rot_matrix.T)
                     c3 = Rotation(c3_axis, order=3)
 
                     if self._check_op(c3, tol_factor=tools.magic_formula(3)*1.1):
-                        t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, 90).T)
+                        t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, np.pi/2).T)
                         return np.dot(t_axis, rot_matrix.T)
 
                 raise Exception('Error orientation T group')
@@ -301,7 +307,7 @@ class PointGroup:
             return
 
         p_axis = tools.get_perpendicular(main_axis)
-        for angle in np.arange(0, 360 / self._max_order+self._tolerance_ang, self._tolerance_ang):
+        for angle in np.arange(0, np.pi / self._max_order+self._tolerance_ang, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
             if self._check_op(Reflection(axis)):
                 self._schoenflies_symbol += 'v'
@@ -325,7 +331,7 @@ class PointGroup:
             return
 
         p_axis = tools.get_perpendicular(main_axis)
-        for angle in np.arange(0, 360/self._max_order+self._tolerance_ang, self._tolerance_ang):
+        for angle in np.arange(0, np.pi/self._max_order+self._tolerance_ang, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
             if self._check_op(Reflection(axis)):
                 self._schoenflies_symbol += 'd'
@@ -342,7 +348,7 @@ class PointGroup:
 
         def max_rotation_order(tolerance):
             for i in range(2, 100):
-                if 360 / (i * (i - 1)) <= tolerance:
+                if 2*np.pi / (i * (i - 1)) <= tolerance:
                     return i-1
 
         n_max = np.min([max_rotation_order(self._tolerance_ang), n_max])
@@ -362,7 +368,6 @@ class PointGroup:
         """
         sym_matrix = operation.get_matrix()
         error_abs_rad = abs_to_rad(self._tolerance_eig, coord=self._cent_coord)
-        tolerance = np.deg2rad(self._tolerance_ang)
 
         op_coordinates = np.dot(self._cent_coord, sym_matrix.T)
         for idx, op_coord in enumerate(op_coordinates):
@@ -375,7 +380,7 @@ class PointGroup:
                     if self._symbols[idx_2] != self._symbols[idx]:
                         continue
                     # d_r = np.linalg.norm([d1, d2])
-                    tolerance_total = tolerance * tol_factor + error_abs_rad[idx_2]
+                    tolerance_total = self._tolerance_ang * tol_factor + error_abs_rad[idx_2]
                     if d1 < tolerance_total and d2 < tolerance_total:
                         return True
                 return False
