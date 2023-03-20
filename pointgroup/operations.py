@@ -7,9 +7,6 @@ class Inversion:
     def get_matrix(self):
         return -np.identity(3)
 
-    def associated_error(self):
-        return 0
-
 
 class Rotation:
     def __init__(self, axis, order=1):
@@ -20,9 +17,6 @@ class Rotation:
     def get_matrix(self):
 
         return rotation_matrix(self._axis, 360 / self._order)
-
-    def associated_error(self):
-        return magic_formula(self._order)
 
 
 class ImproperRotation:
@@ -40,9 +34,6 @@ class ImproperRotation:
 
         return np.dot(rot_matrix, refl_matrix.T)
 
-    def associated_error(self):
-        return magic_formula(self._order)
-
 
 class Reflection:
     def __init__(self, axis):
@@ -56,5 +47,3 @@ class Reflection:
 
         return np.identity(3) - 2*np.outer(self._axis, self._axis)/uax
 
-    def associated_error(self):
-        return magic_formula(2)

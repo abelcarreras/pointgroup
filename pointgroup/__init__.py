@@ -18,7 +18,7 @@ def angle_between_vector_matrix(vector, coord, tolerance=1e-5):
         if n < tolerance:
             angles.append(0)
         else:
-            angles.append(np.arccos(np.clip( v/n, -1.0, 1.0)))
+            angles.append(np.arccos(np.clip(v/n, -1.0, 1.0)))
     return np.array(angles)
 
 
@@ -128,7 +128,7 @@ class PointGroup:
         main_axis = [1, 0, 0]
         for axis in np.identity(3):
             c2 = Rotation(axis, order=2)
-            if self._check_op(c2):
+            if self._check_op(c2, tol_factor=0.0):
                 n_axis_c2 += 1
                 main_axis = axis
 
@@ -150,7 +150,7 @@ class PointGroup:
         self._max_order = self._get_axis_rot_order(main_axis, n_max=9)
 
         p_axis = tools.get_perpendicular(main_axis)
-        for angle in np.arange(0, 360/self._max_order+self._tolerance_ang, self._tolerance_ang*2):
+        for angle in np.arange(0, 360/self._max_order+self._tolerance_ang, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
             c2 = Rotation(axis, order=2)
             if self._check_op(c2):
@@ -176,17 +176,17 @@ class PointGroup:
                 c4 = Rotation(axis, order=4)
                 c3 = Rotation(axis, order=3)
 
-                if self._check_op(c5):
+                if self._check_op(c5, tol_factor=tools.magic_formula(5)):
                     self._schoenflies_symbol = "I"
                     main_axis = axis
                     self._max_order = 5
                     break
-                elif self._check_op(c4):
+                elif self._check_op(c4, tol_factor=tools.magic_formula(4)):
                     self._schoenflies_symbol = "O"
                     main_axis = axis
                     self._max_order = 4
                     break
-                elif self._check_op(c3):
+                elif self._check_op(c3, tol_factor=tools.magic_formula(3)):
                     self._schoenflies_symbol = "T"
                     main_axis = axis
                     self._max_order = 3
@@ -210,7 +210,7 @@ class PointGroup:
                     c5_axis = np.dot(axis, rot_matrix.T)
                     c5 = Rotation(c5_axis, order=5)
 
-                    if self._check_op(c5, tol_factor=1.2):
+                    if self._check_op(c5, tol_factor=tools.magic_formula(5)*1.2):
                         t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, 90).T)
                         return np.dot(t_axis, rot_matrix.T)
 
@@ -236,7 +236,7 @@ class PointGroup:
                     c4_axis = np.dot(axis, rot_matrix.T)
                     c4 = Rotation(c4_axis, order=4)
 
-                    if self._check_op(c4, tol_factor=1.2):
+                    if self._check_op(c4, tol_factor=tools.magic_formula(4)*1.2):
                         return axis
 
                 raise Exception('Error orientation O group')
@@ -261,7 +261,7 @@ class PointGroup:
                     c3_axis = np.dot(axis, rot_matrix.T)
                     c3 = Rotation(c3_axis, order=3)
 
-                    if self._check_op(c3, tol_factor=1.1):
+                    if self._check_op(c3, tol_factor=tools.magic_formula(3)*1.1):
                         t_axis = np.dot(main_axis, rotation_matrix(p_axis_base, 90).T)
                         return np.dot(t_axis, rot_matrix.T)
 
@@ -274,7 +274,7 @@ class PointGroup:
                 self._schoenflies_symbol += 'h'
                 return
 
-            if self._check_op(Reflection([0, 0, 1]), tol_factor=np.sqrt(3) * 1.1):
+            if self._check_op(Reflection([0, 0, 1]), tol_factor=tools.magic_formula(2) * np.sqrt(3) * 1.1):
                 self._schoenflies_symbol += 'd'
                 return
 
@@ -303,7 +303,7 @@ class PointGroup:
         p_axis = tools.get_perpendicular(main_axis)
         for angle in np.arange(0, 360 / self._max_order+self._tolerance_ang, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
-            if self._check_op(Reflection(axis), tol_factor=1 / tools.magic_formula(2)):
+            if self._check_op(Reflection(axis)):
                 self._schoenflies_symbol += 'v'
                 self._set_orientation(main_axis, axis)
                 break
@@ -327,7 +327,7 @@ class PointGroup:
         p_axis = tools.get_perpendicular(main_axis)
         for angle in np.arange(0, 360/self._max_order+self._tolerance_ang, self._tolerance_ang):
             axis = np.dot(p_axis, rotation_matrix(main_axis, angle))
-            if self._check_op(Reflection(axis), tol_factor=1 / tools.magic_formula(2)):
+            if self._check_op(Reflection(axis)):
                 self._schoenflies_symbol += 'd'
                 return
 
@@ -339,6 +339,13 @@ class PointGroup:
         :param n_max: maximum order to scan
         :return: order
         """
+
+        def max_rotation_order(tolerance):
+            for i in range(2, 100):
+                if 360 / (i * (i - 1)) <= tolerance:
+                    return i-1
+
+        n_max = np.min([max_rotation_order(self._tolerance_ang), n_max])
 
         for i in range(n_max, 1, -1):
             Cn = Rotation(axis, order=i)
@@ -354,7 +361,6 @@ class PointGroup:
         :return: True or False
         """
         sym_matrix = operation.get_matrix()
-        tol_factor = operation.associated_error() * tol_factor
         error_abs_rad = abs_to_rad(self._tolerance_eig, coord=self._cent_coord)
         tolerance = np.deg2rad(self._tolerance_ang)
 
