@@ -1,4 +1,4 @@
-__version__ = '0.4'
+__version__ = '0.4.1'
 import numpy as np
 from pointgroup.operations import Inversion, Rotation, ImproperRotation, Reflection, rotation_matrix
 from pointgroup import tools
