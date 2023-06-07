@@ -324,7 +324,11 @@ class PointGroup:
 
     def _dihedral(self, main_axis):
 
-        self._schoenflies_symbol = "D{}".format(self._max_order)
+        if self._max_order == 1:
+            # D1 is equivalent to C2
+            self._schoenflies_symbol = "C2"
+        else:
+            self._schoenflies_symbol = "D{}".format(self._max_order)
 
         if self._check_op(Reflection(main_axis), tol_factor=0.0):
             self._schoenflies_symbol += 'h'

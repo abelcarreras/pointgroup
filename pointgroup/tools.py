@@ -10,7 +10,7 @@ def get_mass(symbols):
         try:
             mass_vector.append(element_mass(symbol))
         except KeyError as e:
-            warnings.warn('Atomic mass of element {} not found, using 1 u'.format(e))
+            warnings.warn('Atomic element {} not recognized, using mass 1'.format(symbol))
             mass_vector.append(1.0)
     return mass_vector
 
