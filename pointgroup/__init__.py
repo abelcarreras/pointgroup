@@ -80,13 +80,39 @@ class PointGroup:
         else:
             raise Exception('Group type error')
 
+    def _rename_point_group(self, pointgroup):
+        """
+        renames point group
+        
+        C1h = Cs = C1v = S1
+        S2 = Ci
+        C2 = D1 
+        C2h = D1d
+        C2v = D1h
+        C3h = S3 
+        
+        Ref) http://dms.library.utm.my:8080/vital/access/manager/Repository/vital:110227;jsessionid=8D0CBD4C6AD10FF6BEA7F6839D6E44BB?site_name=GlobalView
+        """
+        if pointgroup in ['C1h', 'Cs', 'C1v', 'S1']:
+            return 'Cs'
+        elif pointgroup in ['S2', 'Ci']:
+            return 'Ci'
+        elif pointgroup in ['C2', 'D1']:
+            return 'C2'
+        elif pointgroup in ['C2v', 'D1h']:
+            return 'C2v'
+        elif pointgroup in ['C3h', 'S3']:
+            return 'C3h'
+        else:
+            return pointgroup
+        
     def get_point_group(self):
         """
         get the point symmetry group symbol
 
         :return: the point symmetry group symbol
         """
-        return self._schoenflies_symbol
+        return self._rename_point_group(self._schoenflies_symbol)
 
     def get_standard_coordinates(self):
         """
