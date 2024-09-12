@@ -83,24 +83,24 @@ class PointGroup:
     def _rename_point_group(self, pointgroup):
         """
         renames point group
-        
-        C1h = Cs = C1v = S1
-        S2 = Ci
-        C2 = D1 
-        C2h = D1d
-        C2v = D1h
-        C3h = S3 
-        
         Ref) http://dms.library.utm.my:8080/vital/access/manager/Repository/vital:110227;jsessionid=8D0CBD4C6AD10FF6BEA7F6839D6E44BB?site_name=GlobalView
+
+        :param pointgroup
+        :return: renamed pointgroup
         """
+        # C1h = Cs = C1v = S1
         if pointgroup in ['C1h', 'Cs', 'C1v', 'S1']:
             return 'Cs'
+        # S2 = Ci
         elif pointgroup in ['S2', 'Ci']:
             return 'Ci'
+        # C2 = D1
         elif pointgroup in ['C2', 'D1']:
             return 'C2'
+        # C2h = D1d
         elif pointgroup in ['C2v', 'D1h']:
             return 'C2v'
+        # C3h = S3 
         elif pointgroup in ['C3h', 'S3']:
             return 'C3h'
         else:
