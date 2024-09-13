@@ -35,7 +35,8 @@ def get_inertia_tensor(elements, coord):
     for idx, atom in enumerate(coord):
         total_inertia += mass_vector[idx] * np.dot(atom, atom)
 
-    inertia_matrix /= total_inertia
+    if abs(total_inertia) > 0:
+        inertia_matrix /= total_inertia
     return inertia_matrix
 
 
