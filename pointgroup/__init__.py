@@ -1,4 +1,4 @@
-__version__ = '0.4.2'
+__version__ = '0.4.3'
 import numpy as np
 from pointgroup.operations import Inversion, Rotation, ImproperRotation, Reflection, rotation_matrix
 from pointgroup import tools
@@ -154,7 +154,7 @@ class PointGroup:
 
     def _asymmetric(self):
 
-        self._set_orientation(self._eigenvectors[0], self._eigenvectors[1])
+        self._set_orientation(self._eigenvectors[2], self._eigenvectors[1])
 
         n_axis_c2 = 0
         main_axis = [1, 0, 0]
@@ -175,6 +175,11 @@ class PointGroup:
             self._dihedral(main_axis)
 
     def _symmetric(self):
+        """
+        handle dihedral and cyclic groups (Cn, Dn)
+
+        :return:
+        """
 
         idx = tools.get_non_degenerated(self._eigenvalues, self._tolerance_eig)
         main_axis = self._eigenvectors[idx]
@@ -316,13 +321,13 @@ class PointGroup:
                 self._schoenflies_symbol = 'Cs'
                 p_axis = tools.get_perpendicular(vector)
                 self._set_orientation(vector, p_axis)
-                break
-            else:
-                self._set_orientation(self._eigenvectors[0], self._eigenvectors[1])
-                if self._check_op(Inversion()):
-                    self._schoenflies_symbol = 'Ci'
-                else:
-                    self._schoenflies_symbol = 'C1'
+                return
+
+        # self._set_orientation(self._eigenvectors[0], self._eigenvectors[1])
+        if self._check_op(Inversion()):
+            self._schoenflies_symbol = 'Ci'
+        else:
+            self._schoenflies_symbol = 'C1'
 
     def _cyclic(self, main_axis):
 
