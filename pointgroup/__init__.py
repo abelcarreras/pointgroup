@@ -98,6 +98,9 @@ class PointGroup:
         elif pointgroup in ['C2', 'D1']:
             return 'C2'
         # C2h = D1d
+        elif pointgroup in ['C2h', 'D1d']:
+            return 'C2h'
+        # C2v = D1h
         elif pointgroup in ['C2v', 'D1h']:
             return 'C2v'
         # C3h = S3 
