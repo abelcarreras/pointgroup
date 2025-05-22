@@ -1,4 +1,4 @@
-__version__ = '0.4.3'
+__version__ = '0.4.4'
 import numpy as np
 from pointgroup.operations import Inversion, Rotation, ImproperRotation, Reflection, rotation_matrix
 from pointgroup import tools
@@ -358,6 +358,7 @@ class PointGroup:
         if self._max_order == 1:
             # D1 is equivalent to C2
             self._schoenflies_symbol = "C2"
+            return
         else:
             self._schoenflies_symbol = "D{}".format(self._max_order)
 
