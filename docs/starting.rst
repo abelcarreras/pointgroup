@@ -29,3 +29,18 @@ for the given molecule. The following example shows the determination of the oct
 
     print('Point group: ', pg.get_point_group())
 
+
+Supported point groups
+----------------------
+
+- Linear: ``Cinfv``, ``Dinfh``
+- Low symmetry: ``C1``, ``Cs``, ``Ci``
+- Cyclic: ``Cn``, ``Cnv``, ``Cnh``, and improper ``S2n``
+- Dihedral: ``Dn``, ``Dnh``, ``Dnd``
+- Tetrahedral: ``T``, ``Td``, ``Th``
+- Octahedral: ``O``, ``Oh``
+- Icosahedral: ``I``, ``Ih``
+
+Finite cyclic and dihedral rotation orders are searched up to ``n = 9``. This includes
+``C2`` through ``C9``, their ``v`` and ``h`` variants, ``D2`` through ``D9``, their
+``h`` and ``d`` variants, and improper rotations through ``S18``.
