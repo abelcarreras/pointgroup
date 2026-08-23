@@ -1,0 +1,6 @@
+##############################################
+# Reduced requirements list for ReadTheDocs  #
+##############################################
+
+numpy
+sphinx-rtd-theme
